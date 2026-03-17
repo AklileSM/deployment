@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: a6_stern_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-a6_stern}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ../backend
+    container_name: a6_stern_api
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-a6_stern}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-change_me}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_API_PORT: ${MINIO_API_PORT}
+      MINIO_CONSOLE_PORT: ${MINIO_CONSOLE_PORT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      HYPERBOLIC_API_KEY: ${HYPERBOLIC_API_KEY}
+      FRONTEND_URL: http://localhost
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: a6_stern_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
