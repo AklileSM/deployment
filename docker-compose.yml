@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -32,7 +32,7 @@ services:
       LEGACY_FRONTEND_PUBLIC_DIR: ${LEGACY_FRONTEND_PUBLIC_DIR:-/legacy-frontend-public}
       DEBUG: ${DEBUG:-false}
     ports:
-      - "3001:3001"
+      - "3002:3001"
     volumes:
       - ../frontend/public:/legacy-frontend-public:ro
     depends_on:
@@ -44,7 +44,7 @@ services:
       dockerfile: Dockerfile
     container_name: a6_stern_frontend
     ports:
-      - "80:80"
+      - "3003:80"
     depends_on:
       - backend
 
