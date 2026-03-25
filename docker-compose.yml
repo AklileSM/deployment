@@ -16,7 +16,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: a6_stern_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@local.test}
+      # .test is rejected by pgAdmin's email validator; use a normal-looking dev address.
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "5050:80"
