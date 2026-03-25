@@ -1,0 +1,15 @@
+# Re-attach Postgres + pgAdmin data from a compose project that was named "deployment"
+# (volumes: deployment_postgres_data, deployment_pgadmin_data).
+#
+# Usage from this directory:
+#   docker compose -f docker-compose.yml -f docker-compose.legacy-volumes.yml up -d
+#
+# Omit this file to keep using a6_stern_postgres_data / a6_stern_pgadmin_data instead.
+
+volumes:
+  postgres_data:
+    external: true
+    name: deployment_postgres_data
+  pgadmin_data:
+    external: true
+    name: deployment_pgadmin_data

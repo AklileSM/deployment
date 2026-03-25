@@ -66,8 +66,9 @@ services:
     depends_on:
       - backend
 
-# Explicit names so the same data is used no matter which directory you run
-# `docker compose` from (project name would otherwise change the volume prefix).
+# Stable names (not tied to compose project folder). Fresh clones start here.
+# If your real data is in older volumes named deployment_postgres_data /
+# deployment_pgadmin_data, use the legacy override file when you compose up.
 volumes:
   postgres_data:
     name: a6_stern_postgres_data
