@@ -43,6 +43,9 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       HYPERBOLIC_API_KEY: ${HYPERBOLIC_API_KEY}
+      # Minimal provider switch: point the existing OpenAI-compatible client at Ollama.
+      HYPERBOLIC_API_URL: ${HYPERBOLIC_API_URL:-http://192.168.50.103:11434/v1/chat/completions}
+      HYPERBOLIC_MODEL: ${HYPERBOLIC_MODEL:-qwen3-vl:8b}
       FRONTEND_URL: http://localhost
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       # Comma-separated browser origins if the UI is not under FRONTEND_URL (e.g. http://192.168.x.x:3003). No space after :- in shell defaults.
