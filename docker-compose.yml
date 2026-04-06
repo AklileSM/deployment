@@ -49,6 +49,8 @@ services:
       CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-}
       LEGACY_FRONTEND_PUBLIC_DIR: ${LEGACY_FRONTEND_PUBLIC_DIR:-/legacy-frontend-public}
       DEBUG: ${DEBUG:-false}
+      # false = keep LAZ/LAS in MinIO after Potree conversion (larger storage, can re-convert)
+      DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION: ${DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION:-true}
     ports:
       - "3002:3001"
     volumes:
