@@ -69,6 +69,26 @@ services:
     depends_on:
       - backend
 
+  frontend-next:
+    build:
+      context: ../frontend-next
+      dockerfile: Dockerfile
+      args:
+        # Internal service-to-service URL the Next.js server uses to proxy /api/*
+        # to the backend container. Baked into the build manifest by Next.js.
+        BACKEND_URL: http://backend:3001
+    container_name: a6_stern_frontend_next
+    environment:
+      # Echoed at runtime for clarity; the routing destination itself is baked at build time.
+      BACKEND_URL: http://backend:3001
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "3004:3000"
+    depends_on:
+      - backend
+
 # Stable names (not tied to compose project folder). Fresh clones start here.
 # If your real data is in older volumes named deployment_postgres_data /
 # deployment_pgadmin_data, use the legacy override file when you compose up.
