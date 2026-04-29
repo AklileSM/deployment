@@ -81,9 +81,11 @@ services:
     build:
       context: ../frontend-next
       dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://backend:3001
     container_name: a6_stern_frontend_next
     ports:
-      - "3004:80"
+      - "3004:3000"
     depends_on:
       - backend
 
