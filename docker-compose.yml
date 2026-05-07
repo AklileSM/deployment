@@ -79,7 +79,7 @@ services:
 
   frontend-next:
     build:
-      context: ../frontend-next
+      context: ../frontend-nextJS
       dockerfile: Dockerfile
       args:
         BACKEND_URL: http://backend:3001
