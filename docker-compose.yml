@@ -79,10 +79,12 @@ services:
 
   frontend-next:
     build:
-      context: ../frontend-nextJS
+      context: ../frontend-next
       dockerfile: Dockerfile
       args:
         BACKEND_URL: http://backend:3001
+    environment:
+      BACKEND_URL: http://backend:3001
     container_name: a6_stern_frontend_next
     ports:
       - "3004:3000"
