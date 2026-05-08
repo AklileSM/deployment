@@ -83,6 +83,7 @@ services:
       dockerfile: Dockerfile
       args:
         BACKEND_URL: http://backend:3001
+        NEXT_PUBLIC_API_URL: ""
     environment:
       BACKEND_URL: http://backend:3001
     container_name: a6_stern_frontend_next
