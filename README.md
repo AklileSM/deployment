@@ -360,3 +360,4 @@ To run services locally without Docker, see the README in each repo:
 - `backend/` FastAPI with uvicorn, PostgreSQL and MinIO pointed at local/remote instances
 - `frontend-next/`, `npm run dev`, with `BACKEND_URL` pointing at the running backend
 
+
