@@ -145,11 +145,61 @@ The backend runs lightweight schema migrations at startup (adding columns, creat
 | All uploaded files (images, videos, PDFs, point clouds) | External MinIO, back up MinIO separately |
 
 
-To back up the database:
+### PostgreSQL backup and restore
 
 ```bash
-docker exec a6_stern_db pg_dump -U postgres a6_stern > backup.sql
+# Backup — produces a plain-SQL dump you can store anywhere
+docker exec a6_stern_db pg_dump -U postgres a6_stern > backup_$(date +%Y%m%d).sql
+
+# Restore — into a running (empty) database
+docker exec -i a6_stern_db psql -U postgres a6_stern < backup_20260401.sql
 ```
+
+For automated nightly backups, run the `pg_dump` command from a cron job on the host and copy the output to off-site storage.
+
+### MinIO backup and restore
+
+MinIO is external to this Compose stack. Use the [MinIO Client (`mc`)](https://min.io/docs/minio/linux/reference/minio-mc.html) to back up and restore bucket contents.
+
+**Install mc on the host:**
+
+```bash
+# Linux
+curl -O https://dl.min.io/client/mc/release/linux-amd64/mc && chmod +x mc && mv mc /usr/local/bin/
+```
+
+**Register your MinIO instance:**
+
+```bash
+mc alias set a6minio http://<MINIO_ENDPOINT>:<MINIO_API_PORT> <MINIO_ACCESS_KEY> <MINIO_SECRET_KEY>
+```
+
+**Back up all buckets to a local directory:**
+
+```bash
+mc mirror a6minio/ ./minio-backup-$(date +%Y%m%d)/
+```
+
+`mc mirror` is incremental — re-running it only copies new or changed objects.
+
+**Restore from backup:**
+
+```bash
+# Restore a specific bucket
+mc mirror ./minio-backup-20260401/construction-images/ a6minio/construction-images/
+
+# Restore all buckets
+mc mirror ./minio-backup-20260401/ a6minio/
+```
+
+**Sync to off-site storage (e.g. S3-compatible remote):**
+
+```bash
+mc alias set offsite s3.amazonaws.com ACCESS SECRET
+mc mirror a6minio/ offsite/a6-stern-backup/
+```
+
+> Point cloud files are typically the largest; the `construction-pointclouds` bucket holds both raw LAZ originals (if `DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION=false`) and the converted Potree octree files. Plan storage accordingly.
 
 ## Common operations
 
@@ -184,6 +234,66 @@ docker compose -f docker-compose.yml -f docker-compose.legacy-volumes.yml up -d
 ```
 
 Omit the override file on fresh installs the default volume names are `a6_stern_postgres_data` and `a6_stern_pgadmin_data`.
+
+## Upgrade and rollback
+
+### Upgrading a service
+
+Pull the latest code for the relevant repo, then rebuild only that service:
+
+```bash
+cd ../backend && git pull
+cd ../deployment
+docker compose up -d --build backend
+```
+
+The backend runs schema migrations automatically on startup, new columns are added without data loss. You do not need to run anything manually.
+
+For the frontend:
+
+```bash
+cd ../frontend-next && git pull
+cd ../deployment
+docker compose up -d --build frontend-next
+```
+
+> **Remember:** `BACKEND_URL` is baked into the Next.js image at build time. If you change that variable, you must rebuild.
+
+### Rolling back a service
+
+Tag images before upgrading so you have a known-good reference:
+
+```bash
+# Before upgrading — save the current image under a dated tag
+docker tag a6_stern_api a6_stern_api:backup-$(date +%Y%m%d)
+docker tag a6_stern_frontend_next a6_stern_frontend_next:backup-$(date +%Y%m%d)
+```
+
+To roll back a service to the saved tag:
+
+```bash
+# Stop and remove the current container
+docker compose stop backend
+docker compose rm -f backend
+
+# Re-tag the backup as latest and restart
+docker tag a6_stern_api:backup-20260401 a6_stern_api:latest
+docker compose up -d backend
+```
+
+### Schema migration rollback
+
+There is no automated rollback for database migrations, the migrations are additive-only (new nullable columns, new tables) so downgrading application code is safe without reversing the schema. Old code simply ignores new columns it does not know about.
+
+If a migration caused a problem you need to reverse manually, connect to the database and `ALTER TABLE … DROP COLUMN …` for the column(s) added by that migration. See `backend/app/services/db_migrations.py` for the exact column names added by each function.
+
+### Changing BACKEND_URL mid-deployment
+
+`BACKEND_URL` is baked into the Next.js image at build time (it controls the server-side rewrite target). Changing it in `.env` alone has no effect. Steps:
+
+1. Update `BACKEND_URL` in `.env`
+2. Rebuild: `docker compose up -d --build frontend-next`
+3. Verify: `docker inspect a6_stern_frontend_next | grep BACKEND_URL`
 
 ## Troubleshooting
 

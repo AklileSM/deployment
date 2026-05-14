@@ -7,12 +7,20 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
     ports:
+      # Exposed on 5433 (not 5432) so a locally-installed PostgreSQL instance
+      # can coexist on the default port without a conflict.
       - "5433:5432"
     volumes:
+      # Named volume keeps data across container rebuilds and restarts.
+      # See the "volumes:" block at the bottom for the stable name.
       - postgres_data:/var/lib/postgresql/data
+    # No healthcheck here, the backend depends_on: db but does not wait for
+    # Postgres to finish initialising. If the backend fails on first start,
+    # run: docker compose restart backend
+    # See README troubleshooting section for details.
 
   pgadmin:
-    # Pin a tag from https://hub.docker.com/r/dpage/pgadmin4/tags — avoid non-existent versions.
+    # Pin a tag from https://hub.docker.com/r/dpage/pgadmin4/tags, avoid non-existent versions.
     image: dpage/pgadmin4:latest
     container_name: a6_stern_pgadmin
     environment:
@@ -24,13 +32,18 @@ services:
     depends_on:
       - db
     volumes:
+      # Persists saved server connections across container restarts.
       - pgadmin_data:/var/lib/pgadmin
 
   backend:
     build:
+      # Dockerfile lives in the backend repo. The image installs PotreeConverter
+      # from GitHub at build time internet access required on first build.
       context: ../backend
     container_name: a6_stern_api
     environment:
+      # db is the Docker Compose service name; Docker's internal DNS resolves it
+      # to the correct container IP automatically.
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-a6_stern}
@@ -42,8 +55,13 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      # Set this to a browser-reachable MinIO URL to enable direct browser→MinIO
+      # uploads (bypassing the backend proxy). Leave empty to always use the
+      # chunked proxy upload path.
       MINIO_PUBLIC_UPLOAD_BASE_URL: ${MINIO_PUBLIC_UPLOAD_BASE_URL:-}
       HYPERBOLIC_API_KEY: ${HYPERBOLIC_API_KEY}
+      # Must match the origin the browser uses to reach the frontend container.
+      # Default matches the Next.js frontend served on port 3004 via localhost.
       FRONTEND_URL: http://localhost
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       # Comma-separated browser origins if the UI is not under FRONTEND_URL (e.g. http://192.168.x.x:3003). No space after :- in shell defaults.
@@ -53,13 +71,20 @@ services:
       # false = keep LAZ/LAS in MinIO after Potree conversion (larger storage, can re-convert)
       DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION: ${DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION:-true}
     ports:
+      # Backend FastAPI listens on 3001 internally; mapped to 3002 externally
+      # so health checks and direct API access work from the host.
       - "3002:3001"
     volumes:
+      # Read-only mount of the legacy SPA's public/ directory for the one-time
+      # migration script (scripts/migrate_legacy_assets.py). Safe to leave
+      # mounted permanently; the script is never run automatically.
       - ../frontend/public:/legacy-frontend-public:ro
     depends_on:
       - db
 
   frontend:
+    # Legacy SPA, only needed when migrating from the old static frontend.
+    # Can be omitted entirely once the migration is complete.
     build:
       context: ../frontend
       dockerfile: Dockerfile
@@ -68,12 +93,16 @@ services:
       - "3003:80"
     depends_on:
       - backend
+
   dozzle:
     image: amir20/dozzle:latest
     container_name: a6_stern_logs
     volumes:
+      # Dozzle reads the Docker daemon socket to tail container logs in real
+      # time. This is read-only access: Dozzle cannot start or stop containers.
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
+      # Web UI at http://<host>:9999 — view live logs for any container.
       - "9999:8080"
     restart: unless-stopped
 
@@ -82,9 +111,18 @@ services:
       context: ../frontend-next
       dockerfile: Dockerfile
       args:
+        # BACKEND_URL is a build arg, not just a runtime env var. Next.js bakes
+        # the rewrite destination into its route manifest at build time.
+        # If you change this value you must rebuild the image:
+        #   docker compose up -d --build frontend-next
         BACKEND_URL: http://backend:3001
+        # NEXT_PUBLIC_API_URL is intentionally empty: all /api/* requests are
+        # proxied server-side via the rewrite rule, so the browser never needs
+        # to know the backend URL directly.
         NEXT_PUBLIC_API_URL: ""
     environment:
+      # Runtime override so SSR requests inside the container also resolve
+      # correctly. Must match the build arg above.
       BACKEND_URL: http://backend:3001
     container_name: a6_stern_frontend_next
     ports:
@@ -93,9 +131,14 @@ services:
       - backend
     restart: unless-stopped
 
-# Stable names (not tied to compose project folder). Fresh clones start here.
-# If your real data is in older volumes named deployment_postgres_data /
-# deployment_pgadmin_data, use the legacy override file when you compose up.
+# Named volumes survive container removal and image rebuilds.
+# The explicit "name:" overrides the default "<project-folder>_<volume-name>"
+# naming, so the volumes are stable regardless of which directory you clone
+# this repo into.
+#
+# If your existing data lives in older volumes named deployment_postgres_data /
+# deployment_pgadmin_data, use the legacy override file:
+#   docker compose -f docker-compose.yml -f docker-compose.legacy-volumes.yml up -d
 volumes:
   postgres_data:
     name: a6_stern_postgres_data
