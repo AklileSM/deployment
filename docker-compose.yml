@@ -91,6 +91,7 @@ services:
       - "3004:3000"
     depends_on:
       - backend
+    restart: unless-stopped
 
 # Stable names (not tied to compose project folder). Fresh clones start here.
 # If your real data is in older volumes named deployment_postgres_data /
