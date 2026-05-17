@@ -2,6 +2,19 @@
 
 This repo wires together the three A6-Stern services using Docker Compose. It does not contain application code, it only contains orchestration config.
 
+> **New here?** Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) first — it's the cross-repo front page with a topic-based map of every doc in the project.
+
+## Documentation map
+
+| Doc | Covers |
+|---|---|
+| [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | Cross-repo front page; topic-based index of every doc in `backend/`, `frontend-next/`, and `deployment/` |
+| **README.md** (this file) | Quick start, env vars, services, common operations, troubleshooting |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Service topology, API proxy, networking, data model |
+| [PRODUCTION.md](PRODUCTION.md) | Hardening checklist for non-dev deployments — TLS, secrets, firewall, logging, sizing |
+| [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) | Backup/restore runbook for Postgres + MinIO; fresh-host recovery |
+| [NEXT_STEPS.md](NEXT_STEPS.md) | Roadmap notes (Unitree GO2 robot integration) |
+
 ## Repository layout
 
 All four repos must be cloned as siblings in the same parent directory:
@@ -74,9 +87,25 @@ MinIO buckets are created automatically by the backend on first startup.
 | Variable                                      | Required | Default                   | Description                                                                                                                                                                     |
 | --------------------------------------------- | -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `JWT_SECRET`                                  | **Yes**  | `change-me-in-production` | Secret used to sign JWT tokens. Use a long random string in production.                                                                                                         |
+| `FRONTEND_URL`                                | **Yes** in production | `http://localhost` | Public address the browser uses to reach the frontend. **Used as the base URL in outgoing emails** (verification, password reset). If wrong, email links won't work. |
 | `DEBUG`                                       | No       | `false`                   | Enables FastAPI debug mode and verbose logging                                                                                                                                  |
 | `CORS_EXTRA_ORIGINS`                          | No       | *(empty)*                 | Comma-separated list of additional browser origins to allow (e.g. `http://192.168.1.10:3004`). Useful when the UI is accessed via IP rather than the configured `FRONTEND_URL`. |
 | `DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION` | No       | `true`                    | After a LAZ/LAS point cloud is converted to Potree format, delete the original from MinIO. Set to `false` to keep originals for re-conversion or archiving (uses more storage). |
+
+### Email (SMTP)
+
+Password-reset and email-verification flows are built in. If SMTP is not configured, the backend logs a warning and skips sending — the rest of the app keeps working. See `backend/AUTH_AND_EMAIL.md` for the full flow and tested providers (Resend, Postmark, Mailgun, Gmail App Passwords).
+
+
+| Variable          | Required for emails | Default                   | Description                                                                       |
+| ----------------- | ------------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `SMTP_HOST`       | **Yes**             | *(empty)*                 | SMTP server hostname. Empty = email sends are skipped with a warning log.         |
+| `SMTP_PORT`       | No                  | `587`                     | `587` for STARTTLS, `465` for implicit SSL                                        |
+| `SMTP_USERNAME`   | No                  | *(empty)*                 | Auth username — leave empty for relays that allow unauthenticated sending         |
+| `SMTP_PASSWORD`   | No                  | *(empty)*                 | Auth password / API token                                                          |
+| `SMTP_FROM_EMAIL` | **Yes**             | `noreply@example.com`     | `From:` header on outgoing emails. Must be a deliverable address for your domain. |
+| `SMTP_FROM_NAME`  | No                  | `A6 Stern`                | Display name on the `From:` header                                                 |
+| `SMTP_USE_TLS`    | No                  | `true`                    | `true` → STARTTLS on `SMTP_PORT`; `false` → implicit SSL                          |
 
 
 ### AI vision (optional)

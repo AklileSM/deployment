@@ -1,6 +1,6 @@
 # A6-Stern — Architecture
 
-This document covers how the three repos fit together at runtime. For setup instructions see [README.md](README.md).
+This document covers how the three repos fit together at runtime: topology, the API proxy, networking, and the cross-cutting data model. For per-feature deep dives (auth, files, AI, reports) see the topic-based map in [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md). For setup instructions see [README.md](README.md).
 
 ## System overview
 
@@ -59,55 +59,24 @@ Next.js bakes rewrite destinations into `routes-manifest.json` at `npm run build
 
 For local dev outside Docker, `BACKEND_URL` defaults to `http://localhost:3002` (the backend container's mapped host port).
 
-## Authentication flow
-
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant N as Next.js
-    participant A as FastAPI
-    participant DB as PostgreSQL
-
-    B->>N: POST /api/auth/login
-    N->>A: POST /api/auth/login
-    A->>DB: lookup user, verify bcrypt hash
-    DB-->>A: user record
-    A-->>B: { access_token, user }
-    Note over B: stores token in localStorage (key: a6_auth_v2)
-
-    B->>N: GET /api/projects\nAuthorization: Bearer <token>
-    N->>A: GET /api/projects\nAuthorization: Bearer <token>
-    A->>A: decode JWT, load user from DB
-    A-->>B: projects JSON
-```
-
-
-
-**Token details:**
-
-- Algorithm: HS256
-- Lifetime: 7 days
-- Storage: `localStorage` cleared on logout or 401 response
-- No refresh token expired sessions redirect to `/login`
-- First account registered is automatically granted admin rights
-
-## Role system
+## Authentication & roles (at a glance)
 
 Two independent layers of access control:
 
 ```
-Global admin (User.is_admin)
-├── Manage all users and projects
-├── Upload files to any project
-└── Access /api/admin/* routes
-
+Global admin (User.is_admin)        — manage users + projects, upload anywhere, /api/admin/*
 Project membership (project_members.role)
-├── owner   — manage project settings and members
-├── editor  — create annotations and reports
-└── viewer  — read-only access
+  ├── owner   — manage project settings and members
+  ├── editor  — create annotations and reports, upload files
+  └── viewer  — read-only access
 ```
 
-Admins bypass project membership checks and have implicit access to all projects.
+Admins bypass project membership and have implicit access to all projects. The first registered user is automatically `is_admin = True`. JWTs are HS256 / 7-day lifetime, stored in browser `localStorage` under `a6_auth_v2`, cleared on logout or any 401.
+
+**For the full picture see:**
+- Token issuance, email verification, password reset — [`backend/AUTH_AND_EMAIL.md`](../backend/AUTH_AND_EMAIL.md)
+- Per-endpoint authorization matrix (every route × every role) — [`backend/PERMISSIONS.md`](../backend/PERMISSIONS.md)
+- Frontend session handling, 401 → /login flow — [`frontend-next/AUTH_FLOWS.md`](../frontend-next/AUTH_FLOWS.md)
 
 ## Data model
 
@@ -208,71 +177,13 @@ MinIO
 
 The browser accesses files via **presigned URLs** (7-day expiry) returned by the API. The browser PUT-uploads point clouds directly to MinIO using a presigned URL, bypassing the Next.js proxy for large files.
 
-## Point cloud pipeline
+## Application pipelines (pointers)
 
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant A as FastAPI
-    participant PC as PotreeConverter
-    participant M as MinIO
+Each major feature pipeline lives in its own deep-dive doc. Quick orientation:
 
-    B->>A: POST /api/upload/pointcloud/direct-init
-    A-->>B: { upload_url (presigned PUT) }
-    B->>M: PUT <presigned URL> (LAZ file, direct)
-    B->>A: POST /api/upload/pointcloud/direct-complete
-
-    Note over A: fallback if direct init fails:
-    Note over B,A: chunked upload (64 MB chunks, 5 concurrent,\n3 retries each) → /api/upload/pointcloud/chunk
-
-    A->>PC: PotreeConverter LAZ → Potree format
-    PC-->>A: Potree directory tree
-    A->>M: store Potree files under _potree/ prefix
-    Note over A,M: optionally delete original LAZ
-    A-->>B: FileAsset with status=done
-```
-
-
-
-PotreeConverter is a pre-built Linux binary installed in the backend Docker image at build time. Two concurrent conversion workers run as a background pool; uploaded files queue if both workers are busy.
-
-## AI image analysis pipeline
-
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant A as FastAPI
-    participant DB as PostgreSQL
-    participant V as Vision API
-
-    B->>A: POST /api/ai/analyze\n{ image_url, file_id }
-    A->>DB: check cached ai_description for file_id
-    alt cache hit
-        DB-->>A: existing description
-        A-->>B: 200 { description }
-    else cache miss
-        A-->>B: 202 (processing)
-        A->>V: vision model request (image + prompt)
-        V-->>A: text description
-        A->>DB: store description on FileAsset
-        Note over B: browser polls every 2s\nup to 30 attempts
-        B->>A: POST /api/ai/analyze (poll)
-        A-->>B: 200 { description }
-    end
-```
-
-
-
-The vision API is OpenAI-compatible. Supports local Ollama models (no key needed) or the Hyperbolic cloud API (`VISION_API_KEY`). The feature degrades gracefully all other functionality is unaffected if no model is reachable.
-
-## Report generation
-
-Reports are generated client-side in the browser using **jsPDF**, then uploaded as finished PDF blobs to the backend. The backend stores them in MinIO and records metadata in PostgreSQL.
-
-Two report types:
-
-- **Viewer report** field observation from any viewer (panorama, point cloud, static image, PDF). Saved as a draft (`ViewerReportDraft`), then published as a `Report`.
-- **Comparison report** side-by-side image comparison with annotations. Saved as `ComparisonDraft` entries, consolidated and published together.
+- **File uploads & point-cloud conversion** — two upload paths (direct presigned PUT, chunked through the proxy), SHA-256 duplicate detection, async PotreeConverter worker pool (2 workers, 32 MB chunks). PotreeConverter is a pre-built Linux binary installed in the backend Docker image at build time. Full sequence diagrams, lifecycle states, and retry semantics in [`backend/FILES.md`](../backend/FILES.md).
+- **AI image analysis** — `POST /api/ai/analyze` with a two-layer cache (per-asset DB row + in-memory dict). OpenAI-compatible vision API (local Ollama or Hyperbolic cloud); degrades gracefully if no model is reachable. Browser polls every 2s while a background analysis is in flight (202 response). Full prompt, cache semantics, and abuse-surface discussion in [`backend/AI.md`](../backend/AI.md).
+- **Reports** — client-side PDF generation with jsPDF; the backend stores finished blobs and records metadata. Two flavours: viewer reports (one file) and comparison reports (consolidate multiple drafts into one PDF via pdf-lib). Draft/publish lifecycle, `viewer_kind` enum, and PDF section toggles in [`backend/REPORTS.md`](../backend/REPORTS.md) (server side) and [`frontend-next/REPORTS.md`](../frontend-next/REPORTS.md) (PDF builder, draft UI). BPMN diagram at [`docs/bpmn/09-field-report.bpmn`](../docs/bpmn/09-field-report.bpmn).
 
 ## Container networking
 
