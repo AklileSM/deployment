@@ -109,7 +109,7 @@ services:
       # time. This is read-only access: Dozzle cannot start or stop containers.
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      # Web UI at http://<host>:9999 — view live logs for any container.
+      # Web UI at http://<host>:9999, view live logs for any container.
       - "9999:8080"
     restart: unless-stopped
 

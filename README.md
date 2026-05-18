@@ -2,7 +2,7 @@
 
 This repo wires together the three A6-Stern services using Docker Compose. It does not contain application code, it only contains orchestration config.
 
-> **New here?** Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) first — it's the cross-repo front page with a topic-based map of every doc in the project.
+> **New here?** Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) first, it's the cross-repo front page with a topic-based map of every doc in the project.
 
 ## Documentation map
 
@@ -11,7 +11,7 @@ This repo wires together the three A6-Stern services using Docker Compose. It do
 | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | Cross-repo front page; topic-based index of every doc in `backend/`, `frontend-next/`, and `deployment/` |
 | **README.md** (this file) | Quick start, env vars, services, common operations, troubleshooting |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Service topology, API proxy, networking, data model |
-| [PRODUCTION.md](PRODUCTION.md) | Hardening checklist for non-dev deployments — TLS, secrets, firewall, logging, sizing |
+| [PRODUCTION.md](PRODUCTION.md) | Hardening checklist for non-dev deployments, TLS, secrets, firewall, logging, sizing |
 | [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) | Backup/restore runbook for Postgres + MinIO; fresh-host recovery |
 | [NEXT_STEPS.md](NEXT_STEPS.md) | Roadmap notes (Unitree GO2 robot integration) |
 
@@ -39,7 +39,7 @@ All four repos must be cloned as siblings in the same parent directory:
 ```bash
 cd deployment
 cp .env.docker .env
-# Edit .env — at minimum set DB_PASSWORD, MINIO_*, and JWT_SECRET
+# Edit .env, at minimum set DB_PASSWORD, MINIO_*, and JWT_SECRET
 docker compose up -d --build
 ```
 
@@ -94,14 +94,14 @@ MinIO buckets are created automatically by the backend on first startup.
 
 ### Email (SMTP)
 
-Password-reset and email-verification flows are built in. If SMTP is not configured, the backend logs a warning and skips sending — the rest of the app keeps working. See `backend/AUTH_AND_EMAIL.md` for the full flow and tested providers (Resend, Postmark, Mailgun, Gmail App Passwords).
+Password-reset and email-verification flows are built in. If SMTP is not configured, the backend logs a warning and skips sending, the rest of the app keeps working. See `backend/AUTH_AND_EMAIL.md` for the full flow and tested providers (Resend, Postmark, Mailgun, Gmail App Passwords).
 
 
 | Variable          | Required for emails | Default                   | Description                                                                       |
 | ----------------- | ------------------- | ------------------------- | --------------------------------------------------------------------------------- |
 | `SMTP_HOST`       | **Yes**             | *(empty)*                 | SMTP server hostname. Empty = email sends are skipped with a warning log.         |
 | `SMTP_PORT`       | No                  | `587`                     | `587` for STARTTLS, `465` for implicit SSL                                        |
-| `SMTP_USERNAME`   | No                  | *(empty)*                 | Auth username — leave empty for relays that allow unauthenticated sending         |
+| `SMTP_USERNAME`   | No                  | *(empty)*                 | Auth username, leave empty for relays that allow unauthenticated sending         |
 | `SMTP_PASSWORD`   | No                  | *(empty)*                 | Auth password / API token                                                          |
 | `SMTP_FROM_EMAIL` | **Yes**             | `noreply@example.com`     | `From:` header on outgoing emails. Must be a deliverable address for your domain. |
 | `SMTP_FROM_NAME`  | No                  | `A6 Stern`                | Display name on the `From:` header                                                 |
@@ -177,10 +177,10 @@ The backend runs lightweight schema migrations at startup (adding columns, creat
 ### PostgreSQL backup and restore
 
 ```bash
-# Backup — produces a plain-SQL dump you can store anywhere
+# Backup, produces a plain-SQL dump you can store anywhere
 docker exec a6_stern_db pg_dump -U postgres a6_stern > backup_$(date +%Y%m%d).sql
 
-# Restore — into a running (empty) database
+# Restore, into a running (empty) database
 docker exec -i a6_stern_db psql -U postgres a6_stern < backup_20260401.sql
 ```
 
@@ -209,7 +209,7 @@ mc alias set a6minio http://<MINIO_ENDPOINT>:<MINIO_API_PORT> <MINIO_ACCESS_KEY>
 mc mirror a6minio/ ./minio-backup-$(date +%Y%m%d)/
 ```
 
-`mc mirror` is incremental — re-running it only copies new or changed objects.
+`mc mirror` is incremental, re-running it only copies new or changed objects.
 
 **Restore from backup:**
 
@@ -293,7 +293,7 @@ docker compose up -d --build frontend-next
 Tag images before upgrading so you have a known-good reference:
 
 ```bash
-# Before upgrading — save the current image under a dated tag
+# Before upgrading, save the current image under a dated tag
 docker tag a6_stern_api a6_stern_api:backup-$(date +%Y%m%d)
 docker tag a6_stern_frontend_next a6_stern_frontend_next:backup-$(date +%Y%m%d)
 ```

@@ -1,6 +1,6 @@
 # Next steps
 
-> **Email setup moved.** SMTP and `FRONTEND_URL` are now part of the standard config — see the "Email (SMTP)" section in [README.md](README.md), and `backend/AUTH_AND_EMAIL.md` for the full token flow and tested providers.
+> **Email setup moved.** SMTP and `FRONTEND_URL` are now part of the standard config, see the "Email (SMTP)" section in [README.md](README.md), and `backend/AUTH_AND_EMAIL.md` for the full token flow and tested providers.
 
 ---
 
@@ -18,12 +18,12 @@ The lab's Unitree GO2 wheeled robot is planned as the primary data collection pl
 ### Integration points in the current API
 
 
-| Step                         | Endpoint                                                                                                 |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Authenticate the robot       | `POST /api/auth/login` → store JWT                                                                       |
-| Upload image / video / PDF   | `POST /api/upload/single`                                                                                |
+| Step                         | Endpoint                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Authenticate the robot       | `POST /api/auth/login` → store JWT                                                                      |
+| Upload image / video / PDF   | `POST /api/upload/single`                                                                               |
 | Upload point cloud (LAZ/LAS) | `POST /api/upload/pointcloud/init` → `/api/upload/pointcloud/chunk` → `/api/upload/pointcloud/complete` |
-| Poll conversion status       | `GET /api/files/{file_id}/conversion-status`                                                             |
+| Poll conversion status       | `GET /api/files/{file_id}/conversion-status`                                                            |
 
 
 The API already accepts JWT bearer tokens so the robot client can authenticate as a dedicated service account.

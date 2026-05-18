@@ -1,4 +1,4 @@
-# A6-Stern — Project Overview
+# A6-Stern: Project Overview
 
 **Start here.** This document is the cross-repo front page: what A6-Stern is, how the three repos fit together, and where to read about every feature.
 
@@ -25,7 +25,7 @@ The codebase is split across **three sibling repos** that are cloned next to eac
 | **frontend-next** | UI, viewers (Three.js, Potree, PDF.js), client-side PDF generation (jsPDF). | TypeScript / Next.js |
 | **deployment** | Docker Compose, env vars, production hardening, backup/restore runbooks. No application code. | YAML |
 
-PostgreSQL runs in a container managed by the deployment repo. **MinIO is external** to the Compose stack — point the backend at any MinIO-compatible S3 endpoint.
+PostgreSQL runs in a container managed by the deployment repo. **MinIO is external** to the Compose stack, point the backend at any MinIO-compatible S3 endpoint.
 
 ## How it fits together at runtime
 
@@ -35,13 +35,13 @@ Browser ──HTTP──► Next.js (:3004) ──server-side rewrite──► F
                                                               └──► MinIO (external)
 ```
 
-The browser never sees the backend's internal address. All `/api/*` requests go to Next.js, which rewrites them server-side. This is the reason `BACKEND_URL` is a **build-time** arg in the frontend image — see `ARCHITECTURE.md` for the why.
+The browser never sees the backend's internal address. All `/api/*` requests go to Next.js, which rewrites them server-side. This is the reason `BACKEND_URL` is a **build-time** arg in the frontend image, see `ARCHITECTURE.md` for the why.
 
 Full topology, networking, and the API-proxy rationale are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Documentation map (by topic)
 
-Every feature is documented in depth in the repo that owns the relevant code. Use the topic table below as the index — pick a topic, then read the per-repo docs in any order.
+Every feature is documented in depth in the repo that owns the relevant code. Use the topic table below as the index, pick a topic, then read the per-repo docs in any order.
 
 | Topic | Backend | Frontend | Diagrams / Other |
 |---|---|---|---|
@@ -64,13 +64,13 @@ Every feature is documented in depth in the repo that owns the relevant code. Us
 |---|---|
 | [`README.md`](README.md) | Quick start, env vars, services, common operations, troubleshooting |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System topology, API proxy, networking, data model |
-| [`PRODUCTION.md`](PRODUCTION.md) | Hardening checklist — TLS, secrets, firewall, logging, sizing |
+| [`PRODUCTION.md`](PRODUCTION.md) | Hardening checklist, TLS, secrets, firewall, logging, sizing |
 | [`DISASTER_RECOVERY.md`](DISASTER_RECOVERY.md) | Backup/restore runbook for Postgres + MinIO; fresh-host recovery |
 | [`NEXT_STEPS.md`](NEXT_STEPS.md) | Roadmap notes (Unitree GO2 robot integration) |
 
 ## Setting up an environment
 
-For a first-time bring-up, follow [`README.md`](README.md) § "Quick start" — clone the three repos as siblings, copy `.env.docker` to `.env`, fill in the required values, then `docker compose up -d --build`.
+For a first-time bring-up, follow [`README.md`](README.md) § "Quick start", clone the three repos as siblings, copy `.env.docker` to `.env`, fill in the required values, then `docker compose up -d --build`.
 
 For production deployment, also work through [`PRODUCTION.md`](PRODUCTION.md) (TLS, secrets, firewall) and [`DISASTER_RECOVERY.md`](DISASTER_RECOVERY.md) (so you have a tested restore path before you need one).
 

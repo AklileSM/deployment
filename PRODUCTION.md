@@ -4,15 +4,15 @@ The default `docker compose up -d` setup is suitable for an internal lab network
 
 ## 0. Pre-flight
 
-- [ ] Read `ARCHITECTURE.md` — understand the service topology, the Next.js API proxy, and the `BACKEND_URL` build-arg gotcha.
-- [ ] Have a dedicated Linux host with at least the [recommended sizing](#sizing). Don't co-host with unrelated services.
-- [ ] Have a domain or stable IP you can point users at. The browser must reach it; emails will contain links generated from `FRONTEND_URL`.
+- Read `ARCHITECTURE.md` to understand the service topology, the Next.js API proxy, and the `BACKEND_URL` build-arg gotcha.
+- Have a dedicated Linux host with at least the [recommended sizing](#sizing). Don't co-host with unrelated services.
+- Have a domain or stable IP you can point users at. The browser must reach it; emails will contain links generated from `FRONTEND_URL`.
 
 ## 1. Reverse proxy + TLS
 
 Terminate TLS at a reverse proxy in front of the Next.js container. Two common setups:
 
-### Option A — Caddy (easiest, auto-TLS)
+### Option A: Caddy (easiest, auto-TLS)
 
 ```caddy
 # /etc/caddy/Caddyfile
@@ -33,7 +33,7 @@ minio.example.com {
 
 `systemctl reload caddy` and Caddy will provision a Let's Encrypt cert automatically.
 
-### Option B — nginx + certbot
+### Option B: nginx + certbot
 
 ```nginx
 server {
@@ -68,10 +68,10 @@ Issue cert with `certbot --nginx -d sitescope.example.com`.
 
 ### Mandatory after enabling TLS
 
-- [ ] Set `FRONTEND_URL=https://sitescope.example.com` in `.env`.
-- [ ] **Rebuild the frontend** — `BACKEND_URL` is baked at build time; if you're flipping the public URL, also rebuild: `docker compose up -d --build frontend-next`.
-- [ ] Update `CORS_EXTRA_ORIGINS` if you have additional approved origins (e.g., IP-based admin access on the LAN).
-- [ ] If MinIO is reachable via TLS too, set `MINIO_USE_SSL=true` and update `MINIO_PUBLIC_UPLOAD_BASE_URL`.
+- Set `FRONTEND_URL=https://sitescope.example.com` in `.env`.
+- **Rebuild the frontend**: `BACKEND_URL` is baked at build time; if you're flipping the public URL, also rebuild: `docker compose up -d --build frontend-next`.
+- Update `CORS_EXTRA_ORIGINS` if you have additional approved origins (e.g., IP-based admin access on the LAN).
+- If MinIO is reachable via TLS too, set `MINIO_USE_SSL=true` and update `MINIO_PUBLIC_UPLOAD_BASE_URL`.
 
 ## 2. Secrets management
 
@@ -84,7 +84,7 @@ chmod 600 deployment/.env
 chown root:docker deployment/.env  # whatever group runs docker
 ```
 
-Verify no group/world read. `.env` should never be committed to git — confirm it's in `.gitignore`.
+Verify no group/world read. `.env` should never be committed to git, confirm it's in `.gitignore`.
 
 ### Recommended: Docker secrets
 
@@ -108,7 +108,7 @@ secrets:
   minio_secret_key:  { file: ./secrets/minio_secret_key }
 ```
 
-> The backend does not currently read `*_FILE` variants automatically — you'd need to add a small wrapper that reads the file before launching uvicorn, or shell-expand them in the container entrypoint. Until that's wired up, use plain env vars with strict `.env` permissions.
+> The backend does not currently read `*_FILE` variants automatically, you'd need to add a small wrapper that reads the file before launching uvicorn, or shell-expand them in the container entrypoint. Until that's wired up, use plain env vars with strict `.env` permissions.
 
 ### Recommended: SOPS for git-tracked encrypted secrets
 
@@ -138,28 +138,32 @@ openssl rand -base64 24
 openssl rand -base64 20
 ```
 
-Rotate `JWT_SECRET` if you suspect compromise — this invalidates every existing JWT and forces users to log back in. No data loss.
+Rotate `JWT_SECRET` if you suspect compromise, this invalidates every existing JWT and forces users to log back in. No data loss.
 
 ## 4. Firewall
 
 Only these ports should be open to the public:
 
-| Port | Service |
-|---|---|
-| `80` | redirect to 443 |
-| `443` | Caddy / nginx → Next.js |
+
+| Port                      | Service                                                               |
+| ------------------------- | --------------------------------------------------------------------- |
+| `80`                      | redirect to 443                                                       |
+| `443`                     | Caddy / nginx → Next.js                                               |
 | `443` (separate hostname) | Caddy / nginx → MinIO (only if `MINIO_PUBLIC_UPLOAD_BASE_URL` is set) |
+
 
 Everything else stays bound to localhost or to a private interface:
 
-| Port | Service | Bind to |
-|---|---|---|
-| `3004` | Next.js | `127.0.0.1:3004` |
-| `3002` | Backend | `127.0.0.1:3002` |
-| `5433` | Postgres | `127.0.0.1:5433` (or remove the mapping entirely) |
-| `5050` | pgAdmin | LAN/VPN only, **never public** |
-| `9999` | Dozzle | LAN/VPN only |
-| `9100` | MinIO API | bound to the host's reverse-proxy interface only |
+
+| Port   | Service   | Bind to                                           |
+| ------ | --------- | ------------------------------------------------- |
+| `3004` | Next.js   | `127.0.0.1:3004`                                  |
+| `3002` | Backend   | `127.0.0.1:3002`                                  |
+| `5433` | Postgres  | `127.0.0.1:5433` (or remove the mapping entirely) |
+| `5050` | pgAdmin   | LAN/VPN only, **never public**                    |
+| `9999` | Dozzle    | LAN/VPN only                                      |
+| `9100` | MinIO API | bound to the host's reverse-proxy interface only  |
+
 
 In `docker-compose.override.yml` for production:
 
@@ -224,7 +228,7 @@ Or ship to a central system (`syslog`, `gelf`, `journald`, `loki`).
 
 ### Application logs
 
-The backend logs to stdout — Docker captures it. Useful filters:
+The backend logs to stdout, Docker captures it. Useful filters:
 
 ```bash
 docker compose logs -f backend | grep -i "error\|exception"
@@ -232,7 +236,7 @@ docker compose logs -f backend | grep -i "smtp\|email"           # email send re
 docker compose logs -f backend | grep -i "conversion\|potree"    # pointcloud worker
 ```
 
-Dozzle at `http://<host>:9999` gives the same view through a UI. Don't expose Dozzle publicly — it shows everything.
+Dozzle at `http://<host>:9999` gives the same view through a UI. Don't expose Dozzle publicly, it shows everything.
 
 ## 6. Database
 
@@ -253,9 +257,9 @@ DEST=/var/backups/a6stern
 DATE=$(date +%Y-%m-%d)
 mkdir -p "$DEST"
 docker exec a6_stern_db pg_dump -U postgres -Fc a6_stern > "$DEST/db-$DATE.dump"
-# Rotate — keep 30 days
+# Rotate, keep 30 days
 find "$DEST" -name 'db-*.dump' -mtime +30 -delete
-# Off-site (rsync to backup host, or aws s3 cp, or restic — pick one)
+# Off-site (rsync to backup host, or aws s3 cp, or restic, pick one)
 rsync -a "$DEST/db-$DATE.dump" backup-host:/srv/a6stern/
 ```
 
@@ -272,17 +276,17 @@ ALTER SYSTEM SET random_page_cost     = '1.1';   -- if backed by SSD
 SELECT pg_reload_conf();
 ```
 
-Anything more ambitious — read [pgtune.leopard.in.ua](https://pgtune.leopard.in.ua/) and apply per-host.
+Anything more ambitious, read [pgtune.leopard.in.ua](https://pgtune.leopard.in.ua/) and apply per-host.
 
 ## 7. MinIO
 
-MinIO is external to this Compose stack — that's intentional, so you can size storage and IO independently from the app. In production:
+MinIO is external to this Compose stack, that's intentional, so you can size storage and IO independently from the app. In production:
 
-- [ ] Run MinIO on storage-class disks (not a USB drive).
-- [ ] Enable versioning on the buckets that matter (`construction-images`, `construction-pointclouds`, `construction-reports`) — gives you object-level undo.
-- [ ] Use distinct access keys per environment (dev/staging/prod).
-- [ ] Configure off-host replication via `mc mirror` or MinIO server-side replication.
-- [ ] Lock down the MinIO console (port 9101 by default) to LAN/VPN.
+- Run MinIO on storage-class disks (not a USB drive).
+- Enable versioning on the buckets that matter (`construction-images`, `construction-pointclouds`, `construction-reports`), gives you object-level undo.
+- Use distinct access keys per environment (dev/staging/prod).
+- Configure off-host replication via `mc mirror` or MinIO server-side replication.
+- Lock down the MinIO console (port 9101 by default) to LAN/VPN.
 
 ## 8. AI / vision
 
@@ -305,10 +309,10 @@ Mitigations:
 
 ## 9. Frontend hardening
 
-- [ ] Set `DEBUG=false` (default) so FastAPI hides traceback details.
-- [ ] Inspect `docker inspect a6_stern_frontend_next | grep BACKEND_URL` to confirm the baked URL matches what you intended.
-- [ ] Confirm `NEXT_PUBLIC_API_URL` is **empty** (the default). If it's set to a backend URL, the browser bundle will reference it directly and you've lost the proxy benefit.
-- [ ] Remove the legacy `frontend` container if you're not actively migrating from the old SPA. Edit `docker-compose.yml` and drop the `frontend:` service.
+- Set `DEBUG=false` (default) so FastAPI hides traceback details.
+- Inspect `docker inspect a6_stern_frontend_next | grep BACKEND_URL` to confirm the baked URL matches what you intended.
+- Confirm `NEXT_PUBLIC_API_URL` is **empty** (the default). If it's set to a backend URL, the browser bundle will reference it directly and you've lost the proxy benefit.
+- Remove the legacy `frontend` container if you're not actively migrating from the old SPA. Edit `docker-compose.yml` and drop the `frontend:` service.
 
 ## 10. Updates
 
@@ -326,13 +330,15 @@ Tag images before rebuilding so you can roll back (see README "Upgrade and rollb
 
 ## Sizing
 
-| Resource | Minimum | Recommended |
-|---|---|---|
-| CPU | 2 vCPU | 4–8 vCPU (more if many pointcloud conversions) |
-| RAM | 4 GB | 8–16 GB |
-| Disk (system + DB) | 20 GB | 100 GB SSD |
-| Disk (MinIO) | depends entirely on capture volume — point clouds dominate, plan for 1–5 GB per scan |
-| Network | 100 Mbit/s | 1 Gbit/s, especially if uploading from LAN-attached devices |
+
+| Resource           | Minimum                                                                              | Recommended                                                 |
+| ------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| CPU                | 2 vCPU                                                                               | 4–8 vCPU (more if many pointcloud conversions)              |
+| RAM                | 4 GB                                                                                 | 8–16 GB                                                     |
+| Disk (system + DB) | 20 GB                                                                                | 100 GB SSD                                                  |
+| Disk (MinIO)       | depends entirely on capture volume, point clouds dominate, plan for 1–5 GB per scan |                                                             |
+| Network            | 100 Mbit/s                                                                           | 1 Gbit/s, especially if uploading from LAN-attached devices |
+
 
 A typical lab deployment (one A6-Stern project, ~10 users, daily scans) runs comfortably on 4 vCPU / 8 GB / 200 GB MinIO.
 

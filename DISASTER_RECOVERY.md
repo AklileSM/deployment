@@ -2,22 +2,22 @@
 
 This is the runbook for two scenarios:
 
-1. **Routine restore** — bring back a specific database snapshot or restore some MinIO objects.
-2. **Total host loss** — set up a brand-new machine from your backups.
+1. **Routine restore**: bring back a specific database snapshot or restore some MinIO objects.
+2. **Total host loss**: set up a brand-new machine from your backups.
 
 The Compose stack itself is reproducible from git. The data you actually need to back up is:
 
-- **PostgreSQL** — all metadata (users, projects, rooms, file rows, reports, drafts, annotations).
-- **MinIO** — the file bytes themselves (images, pointclouds, PDFs, report PDFs, floorplans, annotation attachments).
+- **PostgreSQL**: all metadata (users, projects, rooms, file rows, reports, drafts, annotations).
+- **MinIO**: the file bytes themselves (images, pointclouds, PDFs, report PDFs, floorplans, annotation attachments).
 
 Neither can recreate the other. **You need both backups.**
 
 ## What does NOT need to be backed up
 
-- The Docker images — rebuilt from `git pull` + `docker compose build`.
-- The `.env` file — keep a separate, encrypted copy (see `PRODUCTION.md`). It's not "data".
-- pgAdmin's saved server configs — convenience only; recreate by hand.
-- Dozzle — stateless.
+- The Docker images, rebuilt from `git pull` + `docker compose build`.
+- The `.env` file, keep a separate, encrypted copy (see `PRODUCTION.md`). It's not "data".
+- pgAdmin's saved server configs, convenience only; recreate by hand.
+- Dozzle, stateless.
 
 ## Backup strategy
 
@@ -51,7 +51,7 @@ The `-Fc` flag produces a custom-format dump (compressed, allows partial restore
 
 ### MinIO backup
 
-`mc mirror` is incremental — re-running it only copies new or changed objects.
+`mc mirror` is incremental, re-running it only copies new or changed objects.
 
 ```bash
 #!/bin/bash
@@ -78,7 +78,7 @@ The local backup is one disk failure away from useless. Always replicate off-hos
 
 The whole point of backups is to test the restore. Do this in a **non-prod environment** at least once per quarter. Steps below.
 
-## Scenario A — Restore a Postgres snapshot
+## Scenario A: Restore a Postgres snapshot
 
 The current DB has corrupt data (or someone hard-deleted a project that should still exist).
 
@@ -99,9 +99,9 @@ docker compose up -d backend frontend-next
 
 > If your dump is plain SQL (`pg_dump > ...sql`), use `psql ... < ...sql` instead of `pg_restore`.
 
-**Verify** by hitting `/api/health` and logging in as a known user. If the file rows reference MinIO objects that don't exist anymore, you'll see 404s on the file grid — that's the cue to also restore MinIO for the affected date range.
+**Verify** by hitting `/api/health` and logging in as a known user. If the file rows reference MinIO objects that don't exist anymore, you'll see 404s on the file grid: that's the cue to also restore MinIO for the affected date range.
 
-## Scenario B — Restore some MinIO objects
+## Scenario B: Restore some MinIO objects
 
 A user deleted files they shouldn't have.
 
@@ -116,7 +116,7 @@ mc cp /var/backups/a6stern-minio/construction-images/<roomId>/2026-04-01/<file> 
 
 The DB row will already exist if you restored from a snapshot **after** the file was uploaded. If the DB row was also deleted, restore Postgres (Scenario A) to a point in time where the row existed.
 
-## Scenario C — Total host loss (fresh-host recovery)
+## Scenario C: Total host loss (fresh-host recovery)
 
 Disk failure, fire, ransomware. You have only the off-site backups and the git repos.
 
@@ -125,7 +125,7 @@ Disk failure, fire, ransomware. You have only the off-site backups and the git r
 - A fresh Linux host with Docker Engine 24+ and Docker Compose v2 installed.
 - SSH access from the host you'll restore *from* (or `aws cli`/`restic`/whatever you used for off-site).
 - The encrypted `.env` (or know the SOPS / age key needed to decrypt it).
-- A reachable MinIO instance — see step 3.
+- A reachable MinIO instance, see step 3.
 
 ### Step 1. Clone the repos
 
@@ -155,7 +155,7 @@ Verify the password / secret fields are non-empty.
 
 ### Step 3. Restore MinIO
 
-**Option A** — MinIO is back up at the same address. Restore objects:
+**Option A**: MinIO is back up at the same address. Restore objects:
 
 ```bash
 mc alias set a6minio http://<MINIO_ENDPOINT>:<MINIO_API_PORT> <ACCESS> <SECRET>
@@ -166,7 +166,7 @@ rsync -a backup-host:/srv/a6stern-minio/ /var/backups/a6stern-minio/
 mc mirror /var/backups/a6stern-minio/ a6minio/
 ```
 
-**Option B** — MinIO is gone too. Stand up a fresh MinIO instance (Docker, `minio server`, or whatever), point the `MINIO_*` env vars at it in `.env`, then restore as above. The backend will create the buckets on first start if they don't exist, but you can pre-create them with `mc mb` to avoid race conditions:
+**Option B**: MinIO is gone too. Stand up a fresh MinIO instance (Docker, `minio server`, or whatever), point the `MINIO_*` env vars at it in `.env`, then restore as above. The backend will create the buckets on first start if they don't exist, but you can pre-create them with `mc mb` to avoid race conditions:
 
 ```bash
 for b in construction-images construction-thumbnails construction-pointclouds \
@@ -196,7 +196,7 @@ docker exec -i a6_stern_db pg_restore -U postgres -d a6_stern --no-owner < /path
 docker compose up -d --build
 ```
 
-The backend runs additive schema migrations at startup. If your code is newer than the backup, the migrations bring the DB schema up to current — that's safe (additive only).
+The backend runs additive schema migrations at startup. If your code is newer than the backup, the migrations bring the DB schema up to current, that's safe (additive only).
 
 ### Step 6. Reverse proxy + TLS
 
@@ -207,7 +207,7 @@ curl https://<your-domain>/api/health
 # → {"status":"ok","app":"A6 Stern","environment":"production","storage":true}
 ```
 
-If `"storage": false`, MinIO is unreachable from the backend container — check `MINIO_*` env vars and network connectivity.
+If `"storage": false`, MinIO is unreachable from the backend container, check `MINIO_*` env vars and network connectivity.
 
 ### Step 7. Smoke test
 
@@ -223,7 +223,7 @@ If `"storage": false`, MinIO is unreachable from the backend container — check
 2. Open a project. The room list and file grid should load.
 3. Click a thumbnail. The image should render (this confirms MinIO + DB are in sync).
 4. Trigger a small upload. Confirm the file appears immediately.
-5. If pointclouds matter — upload a small LAZ, watch `conversion_status` move through `uploading → pending → processing → ready`.
+5. If pointclouds matter, upload a small LAZ, watch `conversion_status` move through `uploading → pending → processing → ready`.
 
 If steps 3 and 4 work, the restore is functionally complete.
 
@@ -234,7 +234,7 @@ With nightly backups:
 - **RPO** (max data loss): up to 24 hours.
 - **RTO** (time to restore): ~30 min on a pre-provisioned host (most of it is the MinIO mirror and the backend container build).
 
-If you need < 1-hour RPO, set up Postgres WAL archiving (`archive_mode=on`, `archive_command=...`) and point-in-time-recovery — that's outside this doc's scope.
+If you need < 1-hour RPO, set up Postgres WAL archiving (`archive_mode=on`, `archive_command=...`) and point-in-time-recovery, that's outside this doc's scope.
 
 ## What to do if a restore fails
 
@@ -257,7 +257,7 @@ If the dump file itself is corrupt:
 pg_restore -l /path/to/dump  # lists the TOC; errors here = corrupt file
 ```
 
-If the dump is corrupt and you've only kept one backup — you've learned why the retention table in this doc says **30 days local + 90 days off-site**.
+If the dump is corrupt and you've only kept one backup, you've learned why the retention table in this doc says **30 days local + 90 days off-site**.
 
 ## Test schedule
 

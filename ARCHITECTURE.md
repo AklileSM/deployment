@@ -1,4 +1,4 @@
-# A6-Stern — Architecture
+# A6-Stern: Architecture
 
 This document covers how the three repos fit together at runtime: topology, the API proxy, networking, and the cross-cutting data model. For per-feature deep dives (auth, files, AI, reports) see the topic-based map in [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md). For setup instructions see [README.md](README.md).
 
@@ -74,9 +74,10 @@ Project membership (project_members.role)
 Admins bypass project membership and have implicit access to all projects. The first registered user is automatically `is_admin = True`. JWTs are HS256 / 7-day lifetime, stored in browser `localStorage` under `a6_auth_v2`, cleared on logout or any 401.
 
 **For the full picture see:**
-- Token issuance, email verification, password reset — [`backend/AUTH_AND_EMAIL.md`](../backend/AUTH_AND_EMAIL.md)
-- Per-endpoint authorization matrix (every route × every role) — [`backend/PERMISSIONS.md`](../backend/PERMISSIONS.md)
-- Frontend session handling, 401 → /login flow — [`frontend-next/AUTH_FLOWS.md`](../frontend-next/AUTH_FLOWS.md)
+
+- Token issuance, email verification, password reset: `[backend/AUTH_AND_EMAIL.md](../backend/AUTH_AND_EMAIL.md)`
+- Per-endpoint authorization matrix (every route × every role): `[backend/PERMISSIONS.md](../backend/PERMISSIONS.md)`
+- Frontend session handling, 401 → /login flow: `[frontend-next/AUTH_FLOWS.md](../frontend-next/AUTH_FLOWS.md)`
 
 ## Data model
 
@@ -181,9 +182,9 @@ The browser accesses files via **presigned URLs** (7-day expiry) returned by the
 
 Each major feature pipeline lives in its own deep-dive doc. Quick orientation:
 
-- **File uploads & point-cloud conversion** — two upload paths (direct presigned PUT, chunked through the proxy), SHA-256 duplicate detection, async PotreeConverter worker pool (2 workers, 32 MB chunks). PotreeConverter is a pre-built Linux binary installed in the backend Docker image at build time. Full sequence diagrams, lifecycle states, and retry semantics in [`backend/FILES.md`](../backend/FILES.md).
-- **AI image analysis** — `POST /api/ai/analyze` with a two-layer cache (per-asset DB row + in-memory dict). OpenAI-compatible vision API (local Ollama or Hyperbolic cloud); degrades gracefully if no model is reachable. Browser polls every 2s while a background analysis is in flight (202 response). Full prompt, cache semantics, and abuse-surface discussion in [`backend/AI.md`](../backend/AI.md).
-- **Reports** — client-side PDF generation with jsPDF; the backend stores finished blobs and records metadata. Two flavours: viewer reports (one file) and comparison reports (consolidate multiple drafts into one PDF via pdf-lib). Draft/publish lifecycle, `viewer_kind` enum, and PDF section toggles in [`backend/REPORTS.md`](../backend/REPORTS.md) (server side) and [`frontend-next/REPORTS.md`](../frontend-next/REPORTS.md) (PDF builder, draft UI). BPMN diagram at [`docs/bpmn/09-field-report.bpmn`](../docs/bpmn/09-field-report.bpmn).
+- **File uploads & point-cloud conversion**: two upload paths (direct presigned PUT, chunked through the proxy), SHA-256 duplicate detection, async PotreeConverter worker pool (2 workers, 32 MB chunks). PotreeConverter is a pre-built Linux binary installed in the backend Docker image at build time. Full sequence diagrams, lifecycle states, and retry semantics in `[backend/FILES.md](../backend/FILES.md)`.
+- **AI image analysis**: `POST /api/ai/analyze` with a two-layer cache (per-asset DB row + in-memory dict). OpenAI-compatible vision API (local Ollama or Hyperbolic cloud); degrades gracefully if no model is reachable. Browser polls every 2s while a background analysis is in flight (202 response). Full prompt, cache semantics, and abuse-surface discussion in `[backend/AI.md](../backend/AI.md)`.
+- **Reports**: client-side PDF generation with jsPDF; the backend stores finished blobs and records metadata. Two flavours: viewer reports (one file) and comparison reports (consolidate multiple drafts into one PDF via pdf-lib). Draft/publish lifecycle, `viewer_kind` enum, and PDF section toggles in `[backend/REPORTS.md](../backend/REPORTS.md)` (server side) and `[frontend-next/REPORTS.md](../frontend-next/REPORTS.md)` (PDF builder, draft UI). BPMN diagram at `[docs/bpmn/09-field-report.bpmn](../docs/bpmn/09-field-report.bpmn)`.
 
 ## Container networking
 
@@ -197,4 +198,4 @@ All services share the default Docker Compose network (`a6-stern_default` or sim
 | `frontend-next`   | Next.js    |
 
 
-The backend hardcodes `DB_HOST=db` in the Compose file. The frontend uses `BACKEND_URL=http://backend:3001` baked at build time. No service communicates with another using host-port mappings — those exist only for external access.
+The backend hardcodes `DB_HOST=db` in the Compose file. The frontend uses `BACKEND_URL=http://backend:3001` baked at build time. No service communicates with another using host-port mappings, those exist only for external access.
