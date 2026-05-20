@@ -1,4 +1,4 @@
-# A6-Stern: Architecture
+# SiteScope: Architecture
 
 This document covers how the three repos fit together at runtime: topology, the API proxy, networking, and the cross-cutting data model. For per-feature deep dives (auth, files, AI, reports) see the topic-based map in [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md). For setup instructions see [README.md](README.md).
 
@@ -188,7 +188,7 @@ Each major feature pipeline lives in its own deep-dive doc. Quick orientation:
 
 ## Container networking
 
-All services share the default Docker Compose network (`a6-stern_default` or similar). Internal service names resolve as hostnames:
+All services share the default Docker Compose network (`SiteScope_default` or similar). Internal service names resolve as hostnames:
 
 
 | Internal hostname | Service    |

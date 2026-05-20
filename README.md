@@ -1,6 +1,6 @@
-# A6-Stern Deployment
+# SiteScope Deployment
 
-This repo wires together the three A6-Stern services using Docker Compose. It does not contain application code, it only contains orchestration config.
+This repo wires together the three  services using Docker Compose. It does not contain application code, it only contains orchestration config.
 
 > **New here?** Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) first, it's the cross-repo front page with a topic-based map of every doc in the project.
 
@@ -20,7 +20,7 @@ This repo wires together the three A6-Stern services using Docker Compose. It do
 All four repos must be cloned as siblings in the same parent directory:
 
 ```
-/opt/a6-stern/          ← or any directory you prefer
+/opt/SiteScope/          ← or any directory you prefer
 ├── backend/            ← FastAPI + PostgreSQL
 ├── frontend-next/      ← Next.js app
 ├── deployment/         ← this repo (run docker compose from here)
@@ -225,7 +225,7 @@ mc mirror ./minio-backup-20260401/ a6minio/
 
 ```bash
 mc alias set offsite s3.amazonaws.com ACCESS SECRET
-mc mirror a6minio/ offsite/a6-stern-backup/
+mc mirror a6minio/ offsite/SiteScope-backup/
 ```
 
 > Point cloud files are typically the largest; the `construction-pointclouds` bucket holds both raw LAZ originals (if `DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION=false`) and the converted Potree octree files. Plan storage accordingly.

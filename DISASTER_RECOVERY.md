@@ -130,7 +130,7 @@ Disk failure, fire, ransomware. You have only the off-site backups and the git r
 ### Step 1. Clone the repos
 
 ```bash
-mkdir -p /opt/a6-stern && cd /opt/a6-stern
+mkdir -p /opt/SiteScope && cd /opt/SiteScope
 git clone <backend-repo>       backend
 git clone <frontend-next-repo> frontend-next
 git clone <deployment-repo>    deployment
@@ -179,7 +179,7 @@ done
 ### Step 4. Bring up Postgres + restore
 
 ```bash
-cd /opt/a6-stern/deployment
+cd /opt/SiteScope/deployment
 docker compose up -d db pgadmin
 # Wait ~10s for Postgres to initialise.
 docker compose ps   # confirm db is "Up"
