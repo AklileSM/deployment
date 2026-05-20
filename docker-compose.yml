@@ -73,7 +73,7 @@ services:
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
       # Comma-separated browser origins if the UI is not under FRONTEND_URL (e.g. http://192.168.x.x:3003). No space after :- in shell defaults.
       CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-}
-      LEGACY_FRONTEND_PUBLIC_DIR: ${LEGACY_FRONTEND_PUBLIC_DIR:-/legacy-frontend-public}
+      # LEGACY_FRONTEND_PUBLIC_DIR: ${LEGACY_FRONTEND_PUBLIC_DIR:-/legacy-frontend-public}
       DEBUG: ${DEBUG:-false}
       # false = keep LAZ/LAS in MinIO after Potree conversion (larger storage, can re-convert)
       DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION: ${DELETE_ORIGINAL_POINTCLOUD_AFTER_CONVERSION:?}
@@ -81,25 +81,25 @@ services:
       # Backend FastAPI listens on 3001 internally; mapped to 3002 externally
       # so health checks and direct API access work from the host.
       - "3002:3001"
-    volumes:
+    # volumes:
       # Read-only mount of the legacy SPA's public/ directory for the one-time
       # migration script (scripts/migrate_legacy_assets.py). Safe to leave
       # mounted permanently; the script is never run automatically.
-      - ../frontend/public:/legacy-frontend-public:ro
+      # - ../frontend/public:/legacy-frontend-public:ro
     depends_on:
       - db
 
-  frontend:
-    # Legacy SPA, only needed when migrating from the old static frontend.
-    # Can be omitted entirely once the migration is complete.
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    container_name: a6_stern_frontend
-    ports:
-      - "3003:80"
-    depends_on:
-      - backend
+  # frontend:
+  #   # Legacy SPA, only needed when migrating from the old static frontend.
+  #   # Can be omitted entirely once the migration is complete.
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile
+  #   container_name: a6_stern_frontend
+  #   ports:
+  #     - "3003:80"
+  #   depends_on:
+  #     - backend
 
   dozzle:
     image: amir20/dozzle:latest
