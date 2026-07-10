@@ -127,6 +127,7 @@ services:
         # proxied server-side via the rewrite rule, so the browser never needs
         # to know the backend URL directly.
         NEXT_PUBLIC_API_URL: ""
+        NEXT_PUBLIC_ROBOT_TELEMETRY_WS_URL: ${NEXT_PUBLIC_ROBOT_TELEMETRY_WS_URL:-}
     environment:
       # Runtime override so SSR requests inside the container also resolve
       # correctly. Must match the build arg above.
